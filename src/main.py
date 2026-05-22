@@ -51,3 +51,7 @@ def build_index():
     print("Index built and saved to", INDEX_FILE)
 
 # --- You will need to build functions for load, print, and find next ---
+
+if __name__ == "__main__":
+    # This tells Python to actually run the function when you execute the script
+    build_index()
