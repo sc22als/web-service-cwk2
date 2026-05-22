@@ -50,8 +50,101 @@ def build_index():
         json.dump(inverted_index, f)
     print("Index built and saved to", INDEX_FILE)
 
-# --- You will need to build functions for load, print, and find next ---
+# --- Functions for load, print, and find next ---
+
+def main_loop():
+    """The main interactive command-line interface."""
+    print("Search Engine Tool initialised.")
+    print("Available commands: build, load, print <word>, find <phrase>, exit")
+    
+    # This variable will hold our loaded index in memory
+    index_data = None 
+
+    while True:
+        try:
+            # Get user input, strip whitespace, and split into words
+            user_input = input("> ").strip().split()
+            
+            # If the user just pressed Enter without typing, ignore it
+            if not user_input:
+                continue
+                
+            command = user_input[0].lower()
+            args = user_input[1:] # Everything typed after the command
+            
+            if command == "exit" or command == "quit":
+                print("Exiting programme...")
+                break
+                
+            elif command == "build":
+                build_index()
+                
+            elif command == "load":
+                try:
+                    with open(INDEX_FILE, 'r') as f:
+                        index_data = json.load(f)
+                    print("Index successfully loaded into memory.")
+                except FileNotFoundError:
+                    print("Error: index.json not found. Please run 'build' first.")
+                    
+            elif command == "print":
+                if not index_data:
+                    print("Error: Please 'load' the index first.")
+                    continue
+                if not args:
+                    print("Error: Please specify a word to print (e.g., 'print nonsense').")
+                    continue
+                    
+                word = args[0].lower()
+                if word in index_data:
+                    # Print the dictionary nicely formatted
+                    print(json.dumps(index_data[word], indent=4))
+                else:
+                    print(f"Word '{word}' not found in the index.")
+                    
+            elif command == "find":
+                if not index_data:
+                    print("Error: Please 'load' the index first.")
+                    continue
+                if not args:
+                    print("Error: Please specify a search phrase (e.g., 'find good friends').")
+                    continue
+                    
+                # Process multi-word queries
+                search_words = [w.lower() for w in args]
+                matching_pages = None
+                
+                for word in search_words:
+                    if word in index_data:
+                        # Get all URLs where this word appears
+                        pages_with_word = set(index_data[word].keys())
+                        
+                        if matching_pages is None:
+                            # First word sets the initial baseline of pages
+                            matching_pages = pages_with_word
+                        else:
+                            # Intersection keeps ONLY pages that have ALL the words
+                            matching_pages = matching_pages.intersection(pages_with_word)
+                    else:
+                        # If even one word is missing from the index, the whole phrase fails
+                        matching_pages = set()
+                        break
+                        
+                if matching_pages:
+                    print(f"Found {len(matching_pages)} matching pages:")
+                    for page in matching_pages:
+                        print(f" - {page}")
+                else:
+                    print("No pages found containing all those search terms.")
+                    
+            else:
+                print(f"Unknown command: '{command}'")
+                
+        # Gracefully handle Ctrl+C
+        except KeyboardInterrupt:
+            print("\nExiting programme...")
+            break
 
 if __name__ == "__main__":
     # This tells Python to actually run the function when you execute the script
-    build_index()
+    main_loop()
